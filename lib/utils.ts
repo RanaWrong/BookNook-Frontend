@@ -18,3 +18,4 @@ export function formatDate(dateString: string | Date | undefined) {
     return String(dateString);
   }
 }
+
