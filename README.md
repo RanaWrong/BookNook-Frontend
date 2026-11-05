@@ -3,8 +3,8 @@
 > **"Add a book, borrow a book, return a book."**
 
 **Live Website URL**: [https://booknook-online-library.vercel.app](https://booknook-online-library.vercel.app)  
-**Client Repository**: [https://github.com/sketchyouridea/BookNook-Client](https://github.com/sketchyouridea/BookNook-Client)  
-**Server Repository**: [https://github.com/sketchyouridea/BookNook-Server](https://github.com/sketchyouridea/BookNook-Server)
+**Client Repository**: [https://github.com/RanaWrong/BookNook-Frontend](https://github.com/RanaWrong/BookNook-Frontend)  
+**Server Repository**: [https://github.com/RanaWrong/BookNook-Backend](https://github.com/RanaWrong/BookNook-Backend)
 
 ---
 
