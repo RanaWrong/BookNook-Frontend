@@ -27,3 +27,4 @@ export async function uploadImageToImgBB(file: File): Promise<string> {
 
   return data.data.display_url || data.data.url;
 }
+
