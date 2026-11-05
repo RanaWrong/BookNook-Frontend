@@ -1,12 +1,24 @@
 import { betterAuth } from "better-auth";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
+import dns from "node:dns";
 
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/booknook";
+// Ensure DNS resolvers handle Atlas SRV records smoothly on all environments
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch {
+  // Ignore in browser or restricted runtime
+}
+
+const uri =
+  process.env.MONGODB_URI ||
+  "mongodb://localhost:27017/booknook";
+
 const client = new MongoClient(uri);
 const db = client.db("booknook");
 
 export const auth = betterAuth({
-  database: db,
+  database: mongodbAdapter(db),
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
@@ -18,6 +30,6 @@ export const auth = betterAuth({
       enabled: Boolean(process.env.GOOGLE_CLIENT_ID),
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || "booknook_better_auth_secret_key_2026_dev",
+  secret: process.env.BETTER_AUTH_SECRET || "development-fallback-secret-key-min-32-chars",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
