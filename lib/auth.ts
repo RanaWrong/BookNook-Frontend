@@ -10,7 +10,20 @@ try {
   // Ignore in browser or restricted runtime
 }
 
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/booknook";
+function getSanitizedMongoUri(): string {
+  let raw = process.env.MONGODB_URI || "";
+  raw = raw.trim().replace(/^["']|["']$/g, "").trim();
+
+  if (raw && !raw.startsWith("mongodb://") && !raw.startsWith("mongodb+srv://")) {
+    if (raw.includes(".mongodb.net") || raw.includes("@")) {
+      raw = `mongodb+srv://${raw}`;
+    }
+  }
+
+  return raw || "mongodb://localhost:27017/booknook";
+}
+
+const uri = getSanitizedMongoUri();
 
 const client = new MongoClient(uri);
 const db = client.db("booknook");
