@@ -63,13 +63,16 @@ export async function getAuthToken(user: { id?: string; email: string; name?: st
   return data.token;
 }
 
-export async function fetchBooks(params?: {
-  category?: string;
-  sort?: "newest" | "desc" | "asc";
-  limit?: number;
-  search?: string;
-  userEmail?: string;
-}): Promise<Book[]> {
+export async function fetchBooks(
+  params?: {
+    category?: string;
+    sort?: "newest" | "desc" | "asc";
+    limit?: number;
+    search?: string;
+    userEmail?: string;
+  },
+  token?: string
+): Promise<Book[]> {
   const query = new URLSearchParams();
   if (params?.category && params.category !== "All") query.append("category", params.category);
   if (params?.sort) query.append("sort", params.sort);
@@ -77,8 +80,14 @@ export async function fetchBooks(params?: {
   if (params?.search) query.append("search", params.search);
   if (params?.userEmail) query.append("userEmail", params.userEmail);
 
+  const headers: Record<string, string> = {};
+  const activeToken = token || getToken();
+  if (activeToken) {
+    headers["Authorization"] = `Bearer ${activeToken}`;
+  }
+
   const url = `${API_BASE_URL}/books${query.toString() ? `?${query.toString()}` : ""}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { headers, cache: "no-store" });
   const data = await res.json();
 
   if (!res.ok || !data.success) {
@@ -87,8 +96,17 @@ export async function fetchBooks(params?: {
   return data.data;
 }
 
-export async function fetchBookById(id: string): Promise<Book> {
-  const res = await fetch(`${API_BASE_URL}/books/${id}`, { cache: "no-store" });
+export async function fetchBookById(id: string, token?: string): Promise<Book> {
+  const headers: Record<string, string> = {};
+  const activeToken = token || getToken();
+  if (activeToken) {
+    headers["Authorization"] = `Bearer ${activeToken}`;
+  }
+
+  const res = await fetch(`${API_BASE_URL}/books/${id}`, {
+    headers,
+    cache: "no-store",
+  });
   const data = await res.json();
 
   if (!res.ok || !data.success) {

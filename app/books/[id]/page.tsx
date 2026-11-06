@@ -30,21 +30,36 @@ export default function BookDetailsPage() {
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      toast.info("Please log in to view book details.");
+      router.push(`/login?callbackUrl=/books/${id}`);
+    }
+  }, [user, authLoading, id, router]);
+
+  useEffect(() => {
     async function loadBookDetails() {
-      if (!id) return;
+      if (!id || !user) return;
       try {
-        const data = await fetchBookById(id);
+        const data = await fetchBookById(id, token || undefined);
         setBook(data);
         document.title = `BookNook | ${data.title}`;
       } catch (err: any) {
         console.error("Error loading book:", err);
+        if (err.message?.includes("Access denied") || err.message?.includes("Forbidden")) {
+          toast.error("Authentication required to view this book.");
+          router.push(`/login?callbackUrl=/books/${id}`);
+        }
       } finally {
         setLoading(false);
       }
     }
 
-    loadBookDetails();
-  }, [id]);
+    if (user) {
+      loadBookDetails();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [id, user, token, authLoading, router]);
 
   const handleBorrowClick = () => {
     if (!user || !token) {
@@ -58,7 +73,7 @@ export default function BookDetailsPage() {
   const handleBorrowSuccess = async () => {
     // Reload book details to update available copies
     try {
-      const updated = await fetchBookById(id);
+      const updated = await fetchBookById(id, token || undefined);
       setBook(updated);
     } catch {
       // ignore
