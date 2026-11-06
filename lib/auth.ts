@@ -11,9 +11,7 @@ try {
 }
 
 const uri =
-  process.env.MONGODB_URI ||
-  "mongodb://localhost:27017/booknook";
-
+  process.env.MONGODB_URI,
 const client = new MongoClient(uri);
 const db = client.db("booknook");
 
@@ -30,6 +28,6 @@ export const auth = betterAuth({
       enabled: Boolean(process.env.GOOGLE_CLIENT_ID),
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || "development-fallback-secret-key-min-32-chars",
+  secret: process.env.BETTER_AUTH_SECRET || 
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
