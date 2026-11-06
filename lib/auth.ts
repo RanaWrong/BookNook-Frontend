@@ -10,8 +10,8 @@ try {
   // Ignore in browser or restricted runtime
 }
 
-const uri =
-  process.env.MONGODB_URI,
+const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/booknook";
+
 const client = new MongoClient(uri);
 const db = client.db("booknook");
 
@@ -23,11 +23,11 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "placeholder-google-client-id",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder-google-client-secret",
-      enabled: Boolean(process.env.GOOGLE_CLIENT_ID),
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || 
+  secret: process.env.BETTER_AUTH_SECRET || "REMOVED_SECRET",
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
