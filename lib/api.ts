@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
 export interface Book {
   _id: string;
@@ -46,6 +46,25 @@ export const removeToken = (): void => {
   }
 };
 
+// Safe JSON Response parser to prevent "Unexpected token '<', <!DOCTYPE" syntax crash
+async function parseJsonResponse(res: Response, fallbackMessage: string): Promise<any> {
+  const contentType = res.headers.get("content-type") || "";
+  
+  if (!contentType.includes("application/json")) {
+    const preview = await res.text();
+    console.error(`[API Non-JSON Response] URL: ${res.url} | Status: ${res.status}`, preview.slice(0, 200));
+    throw new Error(
+      `Backend API server returned HTML (${res.status}). Please verify NEXT_PUBLIC_API_URL in Vercel points to your live Express backend URL (e.g. https://your-backend.vercel.app), not your Frontend URL.`
+    );
+  }
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || fallbackMessage);
+  }
+  return data;
+}
+
 // API Methods
 export async function getAuthToken(user: { id?: string; email: string; name?: string }): Promise<string> {
   const res = await fetch(`${API_BASE_URL}/auth/token`, {
@@ -54,11 +73,7 @@ export async function getAuthToken(user: { id?: string; email: string; name?: st
     body: JSON.stringify(user),
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to obtain auth token.");
-  }
-
+  const data = await parseJsonResponse(res, "Failed to obtain auth token.");
   setToken(data.token);
   return data.token;
 }
@@ -88,11 +103,7 @@ export async function fetchBooks(
 
   const url = `${API_BASE_URL}/books${query.toString() ? `?${query.toString()}` : ""}`;
   const res = await fetch(url, { headers, cache: "no-store" });
-  const data = await res.json();
-
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to fetch books.");
-  }
+  const data = await parseJsonResponse(res, "Failed to fetch books.");
   return data.data;
 }
 
@@ -107,11 +118,7 @@ export async function fetchBookById(id: string, token?: string): Promise<Book> {
     headers,
     cache: "no-store",
   });
-  const data = await res.json();
-
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to fetch book details.");
-  }
+  const data = await parseJsonResponse(res, "Failed to fetch book details.");
   return data.data;
 }
 
@@ -125,10 +132,7 @@ export async function createBook(bookData: Partial<Book>, token: string): Promis
     body: JSON.stringify(bookData),
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to create book.");
-  }
+  const data = await parseJsonResponse(res, "Failed to create book.");
   return data.data;
 }
 
@@ -142,10 +146,7 @@ export async function updateBook(id: string, bookData: Partial<Book>, token: str
     body: JSON.stringify(bookData),
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to update book.");
-  }
+  const data = await parseJsonResponse(res, "Failed to update book.");
   return data.data;
 }
 
@@ -157,10 +158,7 @@ export async function deleteBook(id: string, token: string): Promise<void> {
     },
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to delete book.");
-  }
+  await parseJsonResponse(res, "Failed to delete book.");
 }
 
 export async function borrowBook(payload: { bookId: string; returnDate: string }, token: string): Promise<Borrow> {
@@ -173,10 +171,7 @@ export async function borrowBook(payload: { bookId: string; returnDate: string }
     body: JSON.stringify(payload),
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to borrow book.");
-  }
+  const data = await parseJsonResponse(res, "Failed to borrow book.");
   return data.data;
 }
 
@@ -188,10 +183,7 @@ export async function fetchUserBorrows(token: string): Promise<Borrow[]> {
     cache: "no-store",
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to fetch borrowed books.");
-  }
+  const data = await parseJsonResponse(res, "Failed to fetch borrowed books.");
   return data.data;
 }
 
@@ -203,9 +195,5 @@ export async function returnBook(borrowId: string, token: string): Promise<void>
     },
   });
 
-  const data = await res.json();
-  if (!res.ok || !data.success) {
-    throw new Error(data.message || "Failed to return book.");
-  }
+  await parseJsonResponse(res, "Failed to return book.");
 }
-
