@@ -80,7 +80,7 @@ npm install
 Create a `.env.local` file in the root directory:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
-BETTER_AUTH_SECRET=REMOVED_SECRET
+BETTER_AUTH_SECRET=<random 32+ characters, e.g. from: openssl rand -base64 48>
 BETTER_AUTH_URL=http://localhost:3000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/booknook?retryWrites=true&w=majority
 NEXT_PUBLIC_IMGBB_API_KEY=your_imgbb_api_key_here

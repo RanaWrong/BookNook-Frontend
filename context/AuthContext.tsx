@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getAuthToken, setToken, removeToken, getToken } from "@/lib/api";
+import { getAuthToken, removeToken, getToken } from "@/lib/api";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           // Check BetterAuth session
           const session = await authClient.getSession();
-          if (session?.data?.user) {
+          if (session?.data?.user && session.data.session?.token) {
             const u = session.data.user;
             const userData: User = {
               id: u.id,
@@ -59,9 +59,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: u.email,
               image: u.image || undefined,
             };
+            const jwt = await getAuthToken(session.data.session.token);
             setUser(userData);
             localStorage.setItem("booknook_user", JSON.stringify(userData));
-            const jwt = await getAuthToken(userData);
             setTokenState(jwt);
           }
         }
@@ -84,45 +84,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       });
 
-      if (res?.error) {
-        throw new Error(res.error.message || "Invalid credentials.");
+      if (res?.error || !res?.data?.user) {
+        throw new Error(res?.error?.message || "Invalid credentials.");
       }
 
+      const u = res.data.user;
+      const sessionToken =
+        res.data.token ?? (await authClient.getSession())?.data?.session?.token;
+      if (!sessionToken) {
+        throw new Error("Could not establish a session. Please try again.");
+      }
+
+      // The API verifies this session itself; no local/demo fallback exists.
+      const jwt = await getAuthToken(sessionToken);
+
       const userData: User = {
-        id: res.data?.user?.id || Date.now().toString(),
-        name: res.data?.user?.name || email.split("@")[0],
-        email: email.toLowerCase().trim(),
-        image: res.data?.user?.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+        id: u.id,
+        name: u.name || u.email.split("@")[0],
+        email: u.email,
+        image: u.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`,
       };
 
       setUser(userData);
       localStorage.setItem("booknook_user", JSON.stringify(userData));
-
-      // Obtain JWT token from Express server
-      const jwt = await getAuthToken(userData);
       setTokenState(jwt);
       toast.success(`Welcome back, ${userData.name}!`);
     } catch (err: any) {
-      // Fallback for local demo if backend or DB is starting
-      if (err.message?.includes("Failed to fetch") || err.message?.includes("network")) {
-        const fallbackUser: User = {
-          id: Date.now().toString(),
-          name: email.split("@")[0],
-          email: email.toLowerCase().trim(),
-          image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-        };
-        setUser(fallbackUser);
-        localStorage.setItem("booknook_user", JSON.stringify(fallbackUser));
-        try {
-          const jwt = await getAuthToken(fallbackUser);
-          setTokenState(jwt);
-        } catch {
-          setToken("dev-mock-jwt-token");
-          setTokenState("dev-mock-jwt-token");
-        }
-        toast.success(`Welcome back, ${fallbackUser.name}!`);
-        return;
-      }
       toast.error(err.message || "Failed to log in.");
       throw err;
     } finally {
@@ -146,10 +133,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       toast.success("Account created successfully! Please log in.");
     } catch (err: any) {
-      if (err.message?.includes("Failed to fetch") || err.message?.includes("network")) {
-        toast.success("Registration completed in local mode! You can now log in.");
-        return;
-      }
       toast.error(err.message || "Failed to register.");
       throw err;
     } finally {

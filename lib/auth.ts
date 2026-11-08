@@ -28,6 +28,14 @@ const uri = getSanitizedMongoUri();
 const client = new MongoClient(uri);
 const db = client.db("booknook");
 
+// Secrets that were published in this repository must never be used again.
+const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
+if (betterAuthSecret && /booknook|development-fallback|changeme|your_/i.test(betterAuthSecret)) {
+  throw new Error(
+    "BETTER_AUTH_SECRET is a known placeholder. Generate a new one: openssl rand -base64 48"
+  );
+}
+
 export const auth = betterAuth({
   database: mongodbAdapter(db),
   emailAndPassword: {
@@ -41,6 +49,7 @@ export const auth = betterAuth({
       enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET || "REMOVED_SECRET",
+  // No fallback: better-auth refuses to run without BETTER_AUTH_SECRET.
+  secret: betterAuthSecret,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });

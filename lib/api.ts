@@ -66,11 +66,13 @@ async function parseJsonResponse(res: Response, fallbackMessage: string): Promis
 }
 
 // API Methods
-export async function getAuthToken(user: { id?: string; email: string; name?: string }): Promise<string> {
+// Exchanges the BetterAuth session token for an API JWT. The backend verifies the
+// session itself; identity is never taken from what the client sends.
+export async function getAuthToken(sessionToken: string): Promise<string> {
   const res = await fetch(`${API_BASE_URL}/auth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(user),
+    body: JSON.stringify({ sessionToken }),
   });
 
   const data = await parseJsonResponse(res, "Failed to obtain auth token.");
